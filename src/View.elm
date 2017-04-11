@@ -89,7 +89,8 @@ renderPlayScreen (w,h) ({t,player1,player2} as scene) =
   in
      Svg.svg (svgAttributes windowSize)
      [ renderScores windowSize player1.score player2.score
-     , renderIce windowSize
+     , renderFloor windowSize
+     , renderCeiling windowSize
      , renderPlayer windowSize player1
      , renderPlayer windowSize player2
      ]
@@ -111,7 +112,7 @@ renderGameoverScreen (w,h) {player1,player2} =
         [ player1, player2 ]
         |> List.filter (\p -> p.score >= winScore)
         |> List.map (\p -> renderPlayer (w,h) p)
-      children = [ winnerText , restartText , renderIce (w,h) ] ++ players
+      children = [ winnerText , restartText , renderFloor (w,h) , renderCeiling (w,h) ] ++ players
   in
       Svg.svg
         (svgAttributes (w,h))
@@ -129,13 +130,31 @@ svgAttributes (w, h) =
   ]
 
 
-renderIce : (Int,Int) -> Svg Msg
-renderIce (w,h) =
+renderFloor : (Int,Int) -> Svg Msg
+renderFloor (w,h) =
   let
-      xString = (toFloat w) * icePosX |> toString
-      yString = (toFloat (h-w)) + (toFloat w) * icePosY |> toString
-      widthString = (toFloat w) * iceWidth |> toString
-      heightString = (toFloat w) * (1-icePosY) |> toString
+      xString = (toFloat w) * floorPosX |> toString
+      yString = (( ((toFloat (h-w)) + (toFloat w) * floorPosY))) |> toString
+      widthString = (toFloat w) * floorWidth |> toString
+      heightString = ((toFloat h) - ((toFloat (h-w)) + (toFloat w) * floorPosY)) / 2 |> toString
+  in
+      Svg.rect
+        [ x xString
+        , y yString
+        , width widthString
+        , height heightString
+        , fill softWhite
+        ]
+        []
+
+
+renderCeiling : (Int,Int) -> Svg Msg
+renderCeiling (w,h) =
+  let
+      xString = (toFloat w) * ceilingPosX |> toString
+      yString = ((toFloat h) - ((toFloat (h-w)) + (toFloat w) * floorPosY)) / 2 |> toString
+      widthString = (toFloat w) * ceilingWidth |> toString
+      heightString = ((toFloat h) - ((toFloat (h-w)) + (toFloat w) * floorPosY)) / 2 |> toString
   in
       Svg.rect
         [ x xString
@@ -151,7 +170,8 @@ renderPlayer : (Int,Int) -> Player -> Svg Msg
 renderPlayer (w,h) {position} =
   let
       x = (toFloat w) * position.x |> toString
-      y = (toFloat (h-w)) + (toFloat w) * (position.y-playerRadius) |> toString
+      --y = (((toFloat h) - ((toFloat (h-w)) + (toFloat w) * -position.y)) / 2) + 50 |> toString
+      y = (toFloat (h-w)) + (toFloat w * (position.y-playerRadius)) |> toString
       radius = (toFloat w) * playerRadius |> toString
   in
       Svg.circle

@@ -51,23 +51,39 @@ newRound =
 
 playerHomePosY : Float
 playerHomePosY =
-  icePosY-0.2
+  floorPosY-0.2
+
+--TODO: floorPosY should be calculated based on min of height or width
+floorPosY : Float
+floorPosY = 0.89
 
 
-icePosY : Float
-icePosY = 0.89
+floorPosX : Float
+floorPosX = 0.1
 
 
-icePosX : Float
-icePosX = 0.1
+floorRightEdgeX : Float
+floorRightEdgeX = floorPosX + floorWidth
 
 
-iceRightEdgeX : Float
-iceRightEdgeX = icePosX + iceWidth
+floorWidth : Float
+floorWidth = 0.8
 
 
-iceWidth : Float
-iceWidth = 0.8
+ceilingPosY : Float
+ceilingPosY = 0.0
+
+
+ceilingPosX : Float
+ceilingPosX = 0.1
+
+
+ceilingRightEdgeX : Float
+ceilingRightEdgeX = ceilingPosX + ceilingWidth
+
+
+ceilingWidth : Float
+ceilingWidth = 0.8
 
 
 playerRadius : Float
@@ -87,6 +103,15 @@ playersOverlap p1 p2 =
       d < playerRadius*2
 
 
+playerHitCeiling : Player -> Bool
+playerHitCeiling p =
+  let
+  --TODO: ceilingPosY+0.29 should be calculated
+      d = distance (p.position.x,p.position.y) (p.position.x,ceilingPosY+0.29)
+  in
+      d < playerRadius*2
+
+
 deflect : Player -> Player -> Vector
 deflect player otherPlayer =
   let
@@ -96,3 +121,15 @@ deflect player otherPlayer =
       vy = sin angle |> (*) power
   in
       { x = vx, y = vy }
+
+
+--TODO: fix angle and power logic. the downwards deflection is too strong
+deflectCeiling : Player -> Vector
+deflectCeiling player =
+  let
+      power = magnitude player.velocity
+      angle = angleBetweenPoints player.position { x = player.position.x, y = ceilingPosY+0.29 } |> (+) pi
+      vx = cos angle |> (*) power
+      vy = sin angle |> (*) power
+  in
+      { x = player.velocity.x, y = -player.velocity.y }

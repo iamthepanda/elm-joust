@@ -93,14 +93,17 @@ hasFallen player =
 steerAndGravity : Time -> Ui -> Player -> Player
 steerAndGravity delta {pressedKeys} ({velocity} as player) =
   let
-      directionX = if keyPressed player.leftKey pressedKeys then
+      directionX = if keyPressed player.leftKey pressedKeys && not (keyPressed player.rightKey pressedKeys) then
                      -1
-                   else if keyPressed player.rightKey pressedKeys then
+                   else if keyPressed player.rightKey pressedKeys && not (keyPressed player.leftKey pressedKeys) then
                      1
                    else
                      0
       ax = directionX * 0.0000019
-      vx_ = velocity.x + ax*delta |> friction delta
+      vx_ = 
+        if not (player.position.y==floorPosY) then 
+          velocity.x + ax*delta |> friction delta
+        else (velocity.x + ax*delta) / 1.05 |> friction delta
       vy_ = velocity.y |> (gravity delta)
       velocity_ = { velocity | x = vx_
                              , y = vy_ }
@@ -112,6 +115,10 @@ handleCollisions : Player -> Player -> (Player,Player)
 handleCollisions player1 player2 =
   if playersOverlap player1 player2 then
     bounceOffEachOther player1 player2
+  else if playerHitCeiling player1 then
+    (bounceOffCeiling player1, player2)
+  else if playerHitCeiling player2 then
+    (bounceOffCeiling player2, player1)
   else
     (player1, player2)
 
@@ -127,18 +134,30 @@ bounceOffEachOther player1 player2 =
       (player1_, player2_)
 
 
+bounceOffCeiling : Player -> Player
+bounceOffCeiling player =
+  let
+      v1 = deflectCeiling player
+      player_ = { player | velocity = v1 }
+  in
+      player_
+
+
 movePlayer : Time -> Player -> Player
 movePlayer delta ({velocity,position} as player) =
   let
       vx = velocity.x
       vy = velocity.y
-      airborne = position.y + vy*delta < icePosY
-      stepFn = if airborne then
-                 fly
-               else if inBounds position.x then
-                 walk
-               else
-                 fall
+      airborne = position.y + vy*delta < floorPosY
+      stepFn = 
+        if airborne then
+          glide
+        else if airborne && inBounds position.x then
+          glide
+        else if inBounds position.x then
+          walk
+        else
+          fall
       (x_, y_, vx_, vy_) = stepFn delta position.x position.y vx vy
       position_ = { position | x = x_
                              , y = y_ }
@@ -150,8 +169,8 @@ movePlayer delta ({velocity,position} as player) =
 
 
 
-fly : Time -> Float -> Float -> Float -> Float -> (Float,Float,Float,Float)
-fly delta x y vx vy =
+glide : Time -> Float -> Float -> Float -> Float -> (Float,Float,Float,Float)
+glide delta x y vx vy =
   (x+vx*delta, y+vy*delta, vx, vy)
 
 
@@ -159,7 +178,7 @@ walk : Time -> Float -> Float -> Float -> Float -> (Float,Float,Float,Float)
 walk delta x y vx vy =
   let
       x_ = x + vx*delta
-      y_ = icePosY
+      y_ = floorPosY
       vy = 0
   in
       (x_, y_, vx, vy)
@@ -171,7 +190,7 @@ fall delta x y vx vy =
       y_ = y + vy*delta
       x_ = x + vx*delta
       isLeftSide = x<0.5
-      x__ = if y_<icePosY+playerRadius then
+      x__ = if y_<floorPosY+playerRadius then
              rollOffEdge x_ y_ isLeftSide
            else
              keepOutOfBounds x_
@@ -181,7 +200,7 @@ fall delta x y vx vy =
 
 inBounds : Float -> Bool
 inBounds x =
-  x>=icePosX && x<=iceRightEdgeX
+  x>=floorPosX && x<=floorRightEdgeX
 
 
 friction : Time -> Float -> Float
@@ -192,7 +211,11 @@ friction delta vx =
 jump : Player -> Player
 jump ({position,velocity} as player) =
   let
-      vy = if position.y==icePosY then -0.001 else velocity.y
+      vy = 
+        if velocity.y < -0.001 then 
+          velocity.y
+        else 
+          (velocity.y) - 0.0009
       velocity_ = { velocity | y = vy }
   in
       { player | velocity = velocity_ }
@@ -206,10 +229,10 @@ gravity delta vy =
 rollOffEdge : Float -> Float -> Bool -> Float
 rollOffEdge x y isLeftSide =
   let
-      edgePosX = if isLeftSide then icePosX else iceRightEdgeX
+      edgePosX = if isLeftSide then floorPosX else floorRightEdgeX
       increment = 0.003 * (if isLeftSide then -1 else 1)
   in
-      if distance (x,y-playerRadius) (edgePosX,icePosY) > playerRadius then
+      if distance (x,y-playerRadius) (edgePosX,floorPosY) > playerRadius then
         x
       else
         rollOffEdge (x + increment) y isLeftSide
@@ -218,9 +241,9 @@ rollOffEdge x y isLeftSide =
 keepOutOfBounds : Float -> Float
 keepOutOfBounds x =
   if x<0.5 then
-     min x (icePosX-playerRadius)
+     min x (floorPosX-playerRadius)
   else
-     max x (iceRightEdgeX+playerRadius)
+     max x (floorRightEdgeX+playerRadius)
 
 
 handleKeyChange : Bool -> KeyCode -> Model -> Model
@@ -234,10 +257,11 @@ handleKeyChange pressed keycode ({scene,ui} as model) =
           let
               ui_ = { ui | pressedKeys = pressedKeys_ }
               justPressed keycode = freshKeyPress keycode ui.pressedKeys pressedKeys_
-              maybeJump player = if justPressed player.jumpKey then
-                                   jump player
-                                 else
-                                   player
+              maybeJump player = 
+                if justPressed player.jumpKey then
+                  jump player
+                else
+                  player
               player1_ = maybeJump scene.player1
               player2_ = maybeJump scene.player2
               scene_ = { scene |  player1 = player1_, player2 = player2_ }
