@@ -91,14 +91,21 @@ renderPlayScreen (w,h) ({t,player1,player2} as scene) =
      [ renderScores windowSize player1.score player2.score
      , renderFloor windowSize
      , renderCeiling windowSize
-     , renderPlayer windowSize player1
-     , renderPlayer windowSize player2
+     , renderPlayer windowSize player1 blue
+     , renderPlayer windowSize player2 gold
      ]
 
 
 renderGameoverScreen : (Int,Int) -> Scene -> Html.Html Msg
 renderGameoverScreen (w,h) {player1,player2} =
   let
+      color = 
+        if player1.score>=winScore && player2.score>=winScore then
+          softWhite
+        else if player1.score>=winScore then
+          blue
+        else
+          gold
       winnerMessage =
         if player1.score>=winScore && player2.score>=winScore then
           "It's a draw"
@@ -111,7 +118,7 @@ renderGameoverScreen (w,h) {player1,player2} =
       players =
         [ player1, player2 ]
         |> List.filter (\p -> p.score >= winScore)
-        |> List.map (\p -> renderPlayer (w,h) p)
+        |> List.map (\p -> renderPlayer (w,h) p color)
       children = [ winnerText , restartText , renderFloor (w,h) , renderCeiling (w,h) ] ++ players
   in
       Svg.svg
@@ -152,7 +159,7 @@ renderCeiling : (Int,Int) -> Svg Msg
 renderCeiling (w,h) =
   let
       xString = (toFloat w) * ceilingPosX |> toString
-      yString = ((toFloat h) - ((toFloat (h-w)) + (toFloat w) * floorPosY)) / 2 |> toString
+      yString = (( ((toFloat (h-w)) + (toFloat w) * floorPosY))) - (toFloat w)/2 |> toString
       widthString = (toFloat w) * ceilingWidth |> toString
       heightString = ((toFloat h) - ((toFloat (h-w)) + (toFloat w) * floorPosY)) / 2 |> toString
   in
@@ -166,8 +173,8 @@ renderCeiling (w,h) =
         []
 
 
-renderPlayer : (Int,Int) -> Player -> Svg Msg
-renderPlayer (w,h) {position} =
+renderPlayer : (Int,Int) -> Player -> String -> Svg Msg
+renderPlayer (w,h) {position} color =
   let
       x = (toFloat w) * position.x |> toString
       --y = (((toFloat h) - ((toFloat (h-w)) + (toFloat w) * -position.y)) / 2) + 50 |> toString
@@ -178,7 +185,7 @@ renderPlayer (w,h) {position} =
         [ Attributes.cx x
         , Attributes.cy y
         , Attributes.r radius
-        , fill softWhite
+        , fill color
         ]
         []
 
@@ -193,6 +200,14 @@ renderScores (w,h) p1score p2score =
 
 softWhite : String
 softWhite = "rgba(255,255,255,.5)"
+
+
+blue : String
+blue = "rgb(1, 57, 237)"
+
+
+gold : String
+gold = "rgb(254, 198, 18)"
 
 
 mediumWhite : String

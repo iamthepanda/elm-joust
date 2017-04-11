@@ -53,7 +53,7 @@ playerHomePosY : Float
 playerHomePosY =
   floorPosY-0.2
 
---TODO: floorPosY should be calculated based on min of height or width
+
 floorPosY : Float
 floorPosY = 0.89
 
@@ -71,7 +71,7 @@ floorWidth = 0.8
 
 
 ceilingPosY : Float
-ceilingPosY = 0.0
+ceilingPosY = 0.4
 
 
 ceilingPosX : Float
@@ -106,10 +106,9 @@ playersOverlap p1 p2 =
 playerHitCeiling : Player -> Bool
 playerHitCeiling p =
   let
-  --TODO: ceilingPosY+0.29 should be calculated
-      d = distance (p.position.x,p.position.y) (p.position.x,ceilingPosY+0.29)
+      d = p.position.y-ceilingWidth/1.6
   in
-      d < playerRadius*2
+      d < playerRadius
 
 
 deflect : Player -> Player -> Vector
@@ -126,10 +125,10 @@ deflect player otherPlayer =
 --TODO: fix angle and power logic. the downwards deflection is too strong
 deflectCeiling : Player -> Vector
 deflectCeiling player =
-  let
-      power = magnitude player.velocity
-      angle = angleBetweenPoints player.position { x = player.position.x, y = ceilingPosY+0.29 } |> (+) pi
-      vx = cos angle |> (*) power
-      vy = sin angle |> (*) power
-  in
+  --let
+  --    power = magnitude player.velocity
+  --    angle = angleBetweenPoints player.position { x = player.position.x, y = ceilingPosY } |> (+) pi
+  --    vx = cos angle |> (*) power
+  --    vy = sin angle |> (*) power
+  --in
       { x = player.velocity.x, y = -player.velocity.y }
