@@ -28,8 +28,8 @@ type alias Round =
 initialScene : Scene
 initialScene =
   { t = 0
-  , player1 = createPlayer 'A' 'D' 'W' 0.25
-  , player2 = createPlayer 'J' 'L' 'I' 0.75
+  , player1 = createPlayer 'A' 'D' 'F' 0.25
+  , player2 = createPlayer 'H' 'K' 'L' 0.75
   , round = newRound }
 
 

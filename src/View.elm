@@ -16,29 +16,41 @@ import Subscription exposing (..)
 import VirtualDom
 import Json.Encode as Json
 
+import Keyboard exposing (KeyCode)
+import Char exposing (toCode)
 
 view : Model -> Html Msg
 view {ui,scene,secondsPassed} =
   case ui.screen of
     StartScreen ->
-      renderStartScreen ui.windowSize secondsPassed
+      renderStartScreen ui.windowSize secondsPassed scene
 
     PlayScreen ->
       renderPlayScreen ui.windowSize scene
 
     GameoverScreen ->
       renderGameoverScreen ui.windowSize scene
+-- (String.fromChar (Char.fromCode scene.player1.jumpKey))
 
-
-renderStartScreen : (Int,Int) -> Int -> Html.Html Msg
-renderStartScreen (w,h) secondsPassed =
+renderStartScreen : (Int,Int) -> Int -> Scene -> Html.Html Msg
+renderStartScreen (w,h) secondsPassed scene =
   let
       clickHandler = onClick StartGame
       screenAttrs = [ clickHandler ] ++ (svgAttributes (w,h))
       title = largeText w h (h//5) "Elm Joust"
       clickToStart = smallText w h (h*4//5) "Click to start"
       paragraph y lines = renderTextParagraph (w//2) y (normalFontSize w h) "middle" lines []
-      keys = paragraph (h*3//8) [ "Player 1 keys: A W D" , "Player 2 keys: J I L" ]
+      player1 = scene.player1
+      player2 = scene.player2
+      player1Keys = 
+        codeToString (player1.leftKey) ++ " " 
+        ++ codeToString (player1.rightKey) ++ " " 
+        ++ codeToString (player1.jumpKey)
+      player2Keys = 
+        codeToString (player2.leftKey) ++ " " 
+        ++ codeToString (player2.rightKey) ++ " " 
+        ++ codeToString (player2.jumpKey)
+      keys = paragraph (h*3//8) [ "Player 1 keys: " ++ player1Keys, "Player 2 keys: " ++ player2Keys ]
       goal = paragraph (h*4//8) [ "Get points for pushing", "the other off the edge" ]
       win  = paragraph (h*5//8) [ "Score "++ (toString winScore) ++" points to win!" ]
       githubLink = renderGithubLink (w,h)
@@ -50,6 +62,8 @@ renderStartScreen (w,h) secondsPassed =
         screenAttrs
         children
 
+codeToString : KeyCode -> String
+codeToString keycode = String.fromChar (Char.fromCode keycode)
 
 renderGithubLink : (Int,Int) -> Svg Msg
 renderGithubLink (w,h) =
